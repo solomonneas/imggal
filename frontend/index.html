@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Gallery Slideshow</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/settings-panel.css">
+  <link rel="stylesheet" href="css/loading-animations.css">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Main Grid Display -->
+  <div id="grid-container"></div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="hidden">
+    <div class="loading-card glassmorphic">
+      <div class="loading-header">
+        <h1 class="app-title">Image Gallery</h1>
+        <p class="loading-subtitle">Preparing your slideshow...</p>
+      </div>
+
+      <div class="loading-stages">
+        <!-- Stage indicator -->
+        <div class="stage-indicator">
+          <div class="stage active" data-stage="init">
+            <div class="stage-icon">1</div>
+            <span>Initialize</span>
+          </div>
+          <div class="stage-line"></div>
+          <div class="stage" data-stage="fetch">
+            <div class="stage-icon">2</div>
+            <span>Fetch</span>
+          </div>
+          <div class="stage-line"></div>
+          <div class="stage" data-stage="download">
+            <div class="stage-icon">3</div>
+            <span>Download</span>
+          </div>
+          <div class="stage-line"></div>
+          <div class="stage" data-stage="ready">
+            <div class="stage-icon">4</div>
+            <span>Ready</span>
+          </div>
+        </div>
+
+        <!-- Progress content -->
+        <div class="progress-content">
+          <div class="progress-message">Initializing application...</div>
+
+          <!-- Main progress bar -->
+          <div class="progress-bar-container">
+            <div class="progress-bar">
+              <div class="progress-fill"></div>
+            </div>
+            <span class="progress-text">0%</span>
+          </div>
+
+          <!-- Subreddit progress list -->
+          <div class="subreddit-progress hidden">
+            <div class="subreddit-list"></div>
+          </div>
+
+          <!-- Stats row -->
+          <div class="progress-stats hidden">
+            <div class="stat">
+              <span class="stat-value" id="stat-images">0</span>
+              <span class="stat-label">Images</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="stat-speed">--</span>
+              <span class="stat-label">Speed</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="stat-remaining">--</span>
+              <span class="stat-label">Remaining</span>
+            </div>
+          </div>
+
+          <!-- Error display -->
+          <div class="error-display hidden">
+            <div class="error-header">
+              <span class="error-count">0 errors</span>
+              <button class="error-toggle">Show details</button>
+            </div>
+            <div class="error-list hidden"></div>
+          </div>
+        </div>
+
+        <!-- Action buttons during loading -->
+        <div class="loading-actions hidden">
+          <button class="btn btn-secondary" id="btn-skip-loading">Skip (Continue with loaded)</button>
+          <button class="btn btn-secondary" id="btn-cancel-loading">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Panel -->
+  <div id="settings-overlay" class="hidden">
+    <div class="settings-panel glassmorphic">
+      <button class="close-btn" id="close-settings">&times;</button>
+
+      <!-- Tab Navigation -->
+      <div class="settings-tabs">
+        <button class="tab-btn active" data-tab="display">Display</button>
+        <button class="tab-btn" data-tab="source">Source</button>
+        <button class="tab-btn" data-tab="profiles">Profiles</button>
+      </div>
+
+      <!-- Display Settings Tab -->
+      <div class="tab-content active" data-tab="display">
+        <h2 class="settings-title">Display Settings</h2>
+
+        <div class="setting-group">
+          <label class="setting-label">Grid Rows</label>
+          <div class="setting-control">
+            <input type="range" id="grid-rows" min="1" max="6" value="3">
+            <span class="setting-value" id="grid-rows-value">3</span>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">Grid Columns</label>
+          <div class="setting-control">
+            <input type="range" id="grid-cols" min="1" max="6" value="3">
+            <span class="setting-value" id="grid-cols-value">3</span>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">Rotation Interval (seconds)</label>
+          <div class="setting-control">
+            <input type="number" id="rotation-interval" min="5" max="300" value="10">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">Background Color</label>
+          <div class="setting-control color-control">
+            <input type="color" id="bg-color" value="#1a1a1a">
+            <input type="text" id="bg-color-hex" value="#1a1a1a" maxlength="7">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">Image Fit Mode</label>
+          <div class="setting-control radio-group">
+            <label class="radio-label">
+              <input type="radio" name="fit-mode" value="fit" checked>
+              <span>Fit</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="fit-mode" value="fill">
+              <span>Fill</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="fit-mode" value="stretch">
+              <span>Stretch</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-actions">
+          <button class="btn btn-secondary" id="btn-reset-display">Reset to Defaults</button>
+        </div>
+      </div>
+
+      <!-- Source Settings Tab -->
+      <div class="tab-content" data-tab="source">
+        <h2 class="settings-title">Image Source</h2>
+
+        <div class="source-selector">
+          <button class="source-btn active" data-source="reddit">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+              <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/>
+            </svg>
+            Reddit
+          </button>
+          <button class="source-btn" data-source="local">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+              <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+            </svg>
+            Local Folder
+          </button>
+        </div>
+
+        <!-- Reddit Source Options -->
+        <div class="source-options" data-source="reddit">
+          <div class="setting-group">
+            <label class="setting-label">Active Profile</label>
+            <select id="active-profile" class="setting-select"></select>
+          </div>
+
+          <div class="profile-preview">
+            <div class="profile-subreddits"></div>
+          </div>
+
+          <button class="btn btn-primary btn-full" id="btn-load-reddit">
+            Load Gallery
+          </button>
+        </div>
+
+        <!-- Local Folder Options -->
+        <div class="source-options hidden" data-source="local">
+          <div class="setting-group">
+            <label class="setting-label">Folder Path</label>
+            <div class="setting-control folder-input">
+              <input type="text" id="folder-path" placeholder="C:\Pictures\Wallpapers">
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="recursive-scan" checked>
+              <span>Include subfolders</span>
+            </label>
+          </div>
+
+          <div class="setting-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="include-videos">
+              <span>Include videos</span>
+            </label>
+          </div>
+
+          <div class="folder-stats hidden">
+            <span id="folder-count">0 images found</span>
+          </div>
+
+          <button class="btn btn-primary btn-full" id="btn-load-local">
+            Load Gallery
+          </button>
+        </div>
+      </div>
+
+      <!-- Profiles Tab -->
+      <div class="tab-content" data-tab="profiles">
+        <h2 class="settings-title">Profile Manager</h2>
+
+        <div class="profile-editor">
+          <div class="setting-group">
+            <label class="setting-label">Profile Name</label>
+            <input type="text" id="profile-name" placeholder="My Custom Profile">
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-label">Sort By</label>
+            <select id="profile-sort" class="setting-select">
+              <option value="hot">Hot</option>
+              <option value="new">New</option>
+              <option value="top">Top</option>
+              <option value="rising">Rising</option>
+            </select>
+          </div>
+
+          <div class="setting-group top-period-group hidden">
+            <label class="setting-label">Time Period</label>
+            <select id="profile-top-period" class="setting-select">
+              <option value="hour">Past Hour</option>
+              <option value="day">Past 24 Hours</option>
+              <option value="week">Past Week</option>
+              <option value="month">Past Month</option>
+              <option value="year">Past Year</option>
+              <option value="all">All Time</option>
+            </select>
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-label">Add Subreddits</label>
+            <div class="subreddit-input-group">
+              <input type="text" id="subreddit-input" placeholder="e.g., spaceporn">
+              <button class="btn btn-small" id="btn-add-subreddit">Add</button>
+            </div>
+            <div class="subreddit-suggestions hidden"></div>
+          </div>
+
+          <div class="subreddit-tags" id="subreddit-tags"></div>
+
+          <div class="setting-group">
+            <label class="setting-label">Posts Per Subreddit</label>
+            <div class="setting-control">
+              <input type="range" id="posts-per-sub" min="10" max="100" value="50">
+              <span class="setting-value" id="posts-per-sub-value">50</span>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-label">Minimum Score</label>
+            <div class="setting-control">
+              <input type="number" id="min-score" min="0" max="10000" value="100">
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-label">NSFW Filter</label>
+            <select id="nsfw-filter" class="setting-select">
+              <option value="block">Block</option>
+              <option value="blur">Blur</option>
+              <option value="allow">Allow</option>
+            </select>
+          </div>
+
+          <div class="setting-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="round-robin">
+              <span>Round Robin Mode</span>
+            </label>
+            <p class="setting-hint">Cycle through subreddits in order instead of mixing randomly</p>
+          </div>
+
+          <div class="profile-actions">
+            <button class="btn btn-secondary" id="btn-new-profile">New Profile</button>
+            <button class="btn btn-primary" id="btn-save-profile">Save Profile</button>
+            <button class="btn btn-danger" id="btn-delete-profile">Delete</button>
+          </div>
+        </div>
+
+        <!-- Profile Templates -->
+        <div class="profile-templates">
+          <h3 class="templates-title">Quick Start Templates</h3>
+          <div class="template-grid" id="template-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Action Buttons -->
+  <div id="fab-container">
+    <div class="fab-volume-wrapper">
+      <div class="volume-slider-container" id="volume-slider-container">
+        <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="50" orient="vertical">
+        <span class="volume-value" id="volume-value">50</span>
+      </div>
+      <button class="fab fab-volume" id="fab-volume" title="Volume">
+        <svg class="volume-high" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+        </svg>
+        <svg class="volume-low hidden" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+          <path d="M18.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM5 9v6h4l5 5V4L9 9H5z"/>
+        </svg>
+        <svg class="volume-mute hidden" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+          <path d="M7 9v6h4l5 5V4l-5 5H7z"/>
+        </svg>
+      </button>
+    </div>
+    <button class="fab fab-settings" id="fab-settings" title="Settings (S)">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+        <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+      </svg>
+    </button>
+    <button class="fab fab-home" id="fab-home" title="Start Over">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+      </svg>
+    </button>
+    <button class="fab fab-refresh" id="fab-refresh" title="Refresh Gallery">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Status Bar -->
+  <div id="status-bar" class="hidden">
+    <div class="status-left">
+      <span id="status-source">No source loaded</span>
+      <span class="status-divider">|</span>
+      <span id="status-count">0 images</span>
+    </div>
+    <div class="status-center">
+      <span id="status-paused" class="hidden">PAUSED</span>
+    </div>
+    <div class="status-right">
+      <span id="status-next">Next: --</span>
+      <span class="status-divider">|</span>
+      <span id="status-time"></span>
+    </div>
+  </div>
+
+  <!-- Tooltip -->
+  <div id="tooltip" class="hidden"></div>
+
+  <!-- Scripts -->
+  <script src="js/app.js"></script>
+  <script src="js/grid-manager.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/image-rotator.js"></script>
+  <script src="js/progress-display.js"></script>
+</body>
+</html>

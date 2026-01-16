@@ -1,0 +1,15 @@
+{
+  "id": "minimalist",
+  "name": "Minimalist",
+  "subreddits": [
+    "minimalism",
+    "minimalwallpaper",
+    "simplewallpapers"
+  ],
+  "sort": "hot",
+  "topPeriod": "week",
+  "roundRobin": false,
+  "postsPerSub": 50,
+  "nsfwFilter": "block",
+  "minScore": 20
+}

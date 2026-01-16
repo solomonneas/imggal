@@ -1,0 +1,15 @@
+{
+  "id": "art-design",
+  "name": "Art & Design",
+  "subreddits": [
+    "art",
+    "design",
+    "graphic_design"
+  ],
+  "sort": "hot",
+  "topPeriod": "week",
+  "roundRobin": false,
+  "postsPerSub": 50,
+  "nsfwFilter": "block",
+  "minScore": 50
+}

@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Gallery Slideshow</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-dark: #0a0a0f;
+      --bg-gradient: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
+      --accent-1: #6366f1;
+      --accent-2: #8b5cf6;
+      --accent-3: #a855f7;
+      --text-primary: #ffffff;
+      --text-secondary: rgba(255, 255, 255, 0.7);
+      --text-muted: rgba(255, 255, 255, 0.4);
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-gradient);
+      position: relative;
+    }
+
+    /* Animated background */
+    .bg-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .bg-animation .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.5;
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .orb-1 {
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, var(--accent-1) 0%, transparent 70%);
+      top: -200px;
+      left: -200px;
+      animation-delay: 0s;
+    }
+
+    .orb-2 {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, var(--accent-2) 0%, transparent 70%);
+      bottom: -150px;
+      right: -150px;
+      animation-delay: -7s;
+    }
+
+    .orb-3 {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, var(--accent-3) 0%, transparent 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation-delay: -14s;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translate(0, 0) scale(1);
+      }
+      25% {
+        transform: translate(50px, -50px) scale(1.1);
+      }
+      50% {
+        transform: translate(-30px, 30px) scale(0.9);
+      }
+      75% {
+        transform: translate(-50px, -30px) scale(1.05);
+      }
+    }
+
+    /* Grid pattern overlay */
+    .grid-pattern {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      z-index: 1;
+    }
+
+    /* Content */
+    .splash-content {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 40px;
+      max-width: 600px;
+    }
+
+    /* Logo/Icon */
+    .logo-container {
+      margin-bottom: 32px;
+      animation: logoReveal 1s ease-out forwards;
+      opacity: 0;
+    }
+
+    @keyframes logoReveal {
+      from {
+        opacity: 0;
+        transform: scale(0.8) translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .logo {
+      width: 120px;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      background: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-2) 50%, var(--accent-3) 100%);
+      border-radius: 32px;
+      box-shadow:
+        0 20px 60px rgba(99, 102, 241, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .logo::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent 40%,
+        rgba(255, 255, 255, 0.2) 50%,
+        transparent 60%
+      );
+      animation: shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%) rotate(45deg); }
+      100% { transform: translateX(100%) rotate(45deg); }
+    }
+
+    .logo svg {
+      width: 60px;
+      height: 60px;
+      fill: white;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Title */
+    .title {
+      font-family: 'Playfair Display', serif;
+      font-size: 48px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      animation: textReveal 1s ease-out 0.2s forwards;
+      opacity: 0;
+      background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .title span {
+      font-style: italic;
+      background: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-3) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    @keyframes textReveal {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: var(--text-secondary);
+      margin-bottom: 48px;
+      animation: textReveal 1s ease-out 0.4s forwards;
+      opacity: 0;
+      line-height: 1.6;
+    }
+
+    /* Features */
+    .features {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-bottom: 48px;
+      animation: textReveal 1s ease-out 0.6s forwards;
+      opacity: 0;
+    }
+
+    .feature {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .feature:hover .feature-icon {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .feature-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: var(--text-secondary);
+    }
+
+    .feature span {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* CTA Button */
+    .cta-container {
+      animation: textReveal 1s ease-out 0.8s forwards;
+      opacity: 0;
+    }
+
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 48px;
+      background: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-2) 100%);
+      border: none;
+      border-radius: 16px;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      box-shadow:
+        0 8px 32px rgba(99, 102, 241, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    }
+
+    .cta-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--accent-2) 0%, var(--accent-3) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-4px);
+      box-shadow:
+        0 16px 48px rgba(99, 102, 241, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+    }
+
+    .cta-button:hover::before {
+      opacity: 1;
+    }
+
+    .cta-button span,
+    .cta-button svg {
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-button svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+      transition: transform 0.3s ease;
+    }
+
+    .cta-button:hover svg {
+      transform: translateX(4px);
+    }
+
+    .cta-button:active {
+      transform: translateY(-2px);
+    }
+
+    /* Keyboard hint */
+    .keyboard-hint {
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--text-muted);
+      animation: textReveal 1s ease-out 1s forwards;
+      opacity: 0;
+    }
+
+    .keyboard-hint kbd {
+      display: inline-block;
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      margin: 0 4px;
+    }
+
+    /* Footer */
+    .footer {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      z-index: 10;
+    }
+
+    .footer-divider {
+      width: 1px;
+      height: 16px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .github-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .github-link:hover {
+      color: var(--text-primary);
+    }
+
+    .github-link svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+      transition: transform 0.3s ease;
+    }
+
+    .github-link:hover svg {
+      transform: scale(1.1);
+    }
+
+    /* Loading state */
+    .loading {
+      pointer-events: none;
+    }
+
+    .loading .cta-button {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .loading .cta-button::after {
+      content: '';
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      position: absolute;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .title {
+        font-size: 36px;
+      }
+
+      .subtitle {
+        font-size: 16px;
+      }
+
+      .features {
+        gap: 20px;
+      }
+
+      .cta-button {
+        padding: 16px 36px;
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Animated background -->
+  <div class="bg-animation">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="grid-pattern"></div>
+
+  <!-- Main content -->
+  <div class="splash-content">
+    <div class="logo-container">
+      <div class="logo">
+        <svg viewBox="0 0 24 24">
+          <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+        </svg>
+      </div>
+    </div>
+
+    <h1 class="title">Image <span>Gallery</span></h1>
+    <p class="subtitle">A beautiful grid-based slideshow for your favorite images.<br>Load from Reddit or your local folders.</p>
+
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg>
+        </div>
+        <span>Grid Display</span>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701z"/></svg>
+        </div>
+        <span>Reddit</span>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+        </div>
+        <span>Local Files</span>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        </div>
+        <span>Auto Rotate</span>
+      </div>
+    </div>
+
+    <div class="cta-container">
+      <button class="cta-button" id="start-btn">
+        <span>Get Started</span>
+        <svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
+      </button>
+    </div>
+
+    <p class="keyboard-hint">
+      Press <kbd>Enter</kbd> or <kbd>Space</kbd> to continue
+    </p>
+  </div>
+
+  <div class="footer">
+    <span>v1.0.0</span>
+    <div class="footer-divider"></div>
+    <a href="https://github.com/solomonneas" target="_blank" rel="noopener noreferrer" class="github-link">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+      </svg>
+      <span>solomonneas</span>
+    </a>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById('start-btn');
+
+    function launch() {
+      document.body.classList.add('loading');
+      startBtn.innerHTML = '<span>Loading...</span>';
+
+      // Navigate to main app with settings flag
+      setTimeout(() => {
+        window.location.href = 'index.html?showSettings=true';
+      }, 500);
+    }
+
+    startBtn.addEventListener('click', launch);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        launch();
+      }
+    });
+  </script>
+</body>
+</html>

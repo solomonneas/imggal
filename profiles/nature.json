@@ -1,0 +1,15 @@
+{
+  "id": "nature",
+  "name": "Nature",
+  "subreddits": [
+    "earthporn",
+    "natureporn",
+    "landscapephotography"
+  ],
+  "sort": "hot",
+  "topPeriod": "week",
+  "roundRobin": false,
+  "postsPerSub": 50,
+  "nsfwFilter": "block",
+  "minScore": 100
+}

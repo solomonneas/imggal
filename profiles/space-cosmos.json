@@ -1,0 +1,15 @@
+{
+  "id": "space-cosmos",
+  "name": "Space & Cosmos",
+  "subreddits": [
+    "spaceporn",
+    "astrophotography",
+    "space"
+  ],
+  "sort": "hot",
+  "topPeriod": "week",
+  "roundRobin": false,
+  "postsPerSub": 50,
+  "nsfwFilter": "block",
+  "minScore": 100
+}

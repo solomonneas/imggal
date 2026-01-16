@@ -1,0 +1,15 @@
+{
+  "id": "animals",
+  "name": "Animals",
+  "subreddits": [
+    "animal",
+    "aww",
+    "superaww"
+  ],
+  "sort": "hot",
+  "topPeriod": "week",
+  "postsPerSub": 50,
+  "minScore": 100,
+  "nsfwFilter": "allow",
+  "roundRobin": true
+}

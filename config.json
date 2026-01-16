@@ -1,0 +1,13 @@
+{
+  "default_profile": "Space & Cosmos",
+  "grid_rows": 4,
+  "grid_columns": 3,
+  "rotation_interval": 10,
+  "background_color": "#1a1a1a",
+  "image_fit_mode": "fill",
+  "reddit_posts_per_sub": 50,
+  "cache_directory": "./cache",
+  "enable_videos": false,
+  "max_concurrent_downloads": 10,
+  "loading_animation_style": "glassmorphic"
+}

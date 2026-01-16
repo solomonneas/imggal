@@ -1,0 +1,15 @@
+{
+  "id": "urban-architecture",
+  "name": "Urban & Architecture",
+  "subreddits": [
+    "cityporn",
+    "architectureporn",
+    "abandoned"
+  ],
+  "sort": "hot",
+  "topPeriod": "week",
+  "roundRobin": false,
+  "postsPerSub": 50,
+  "nsfwFilter": "block",
+  "minScore": 50
+}
