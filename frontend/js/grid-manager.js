@@ -42,18 +42,14 @@ class GridManager {
     cell.className = 'grid-cell';
     cell.dataset.index = index;
 
-    // Create two image containers for crossfade
-    const imgContainer1 = document.createElement('div');
-    imgContainer1.className = 'image-container';
-    const img1 = document.createElement('img');
-    img1.className = 'cell-image';
-    imgContainer1.appendChild(img1);
+    // Create two media containers for crossfade (can hold img or video)
+    const container1 = document.createElement('div');
+    container1.className = 'image-container';
+    container1.dataset.slot = '0';
 
-    const imgContainer2 = document.createElement('div');
-    imgContainer2.className = 'image-container';
-    const img2 = document.createElement('img');
-    img2.className = 'cell-image';
-    imgContainer2.appendChild(img2);
+    const container2 = document.createElement('div');
+    container2.className = 'image-container';
+    container2.dataset.slot = '1';
 
     // Overlay for hover info
     const overlay = document.createElement('div');
@@ -63,8 +59,8 @@ class GridManager {
       <div class="image-meta"></div>
     `;
 
-    cell.appendChild(imgContainer1);
-    cell.appendChild(imgContainer2);
+    cell.appendChild(container1);
+    cell.appendChild(container2);
     cell.appendChild(overlay);
 
     // Add hover event for tooltip
@@ -75,6 +71,23 @@ class GridManager {
     return cell;
   }
 
+  createMediaElement(type, fitMode) {
+    if (type === 'video') {
+      const video = document.createElement('video');
+      video.className = `cell-media ${fitMode}`;
+      video.autoplay = true;
+      video.loop = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = 'auto';
+      return video;
+    } else {
+      const img = document.createElement('img');
+      img.className = `cell-media ${fitMode}`;
+      return img;
+    }
+  }
+
   getCellCount() {
     return this.cells.length;
   }
@@ -83,7 +96,7 @@ class GridManager {
     return this.cells[index];
   }
 
-  // Set image in a cell with crossfade transition
+  // Set media (image or video) in a cell with crossfade transition
   async setImage(cellIndex, imageData, fitMode = 'fill') {
     const cell = this.cells[cellIndex];
     if (!cell) return;
@@ -102,26 +115,87 @@ class GridManager {
     cell.transitionStart = Date.now();
 
     try {
-      const images = cell.element.querySelectorAll('.cell-image');
-      const currentImg = images[0].classList.contains('visible') ? images[0] : images[1];
-      const nextImg = currentImg === images[0] ? images[1] : images[0];
+      const containers = cell.element.querySelectorAll('.image-container');
+      const isVideo = imageData.type === 'video';
 
-      // Preload next image with timeout
-      try {
-        await this.preloadImage(imageData.url);
-      } catch (e) {
-        console.warn('Failed to preload image:', imageData.url);
-        cell.isTransitioning = false;
-        return;
+      // Find current and next containers
+      let currentContainer, nextContainer;
+      const currentMedia = containers[0].querySelector('.cell-media.visible');
+      if (currentMedia) {
+        currentContainer = containers[0];
+        nextContainer = containers[1];
+      } else {
+        currentContainer = containers[1];
+        nextContainer = containers[0];
       }
 
-      // Set the new image source
-      nextImg.src = imageData.url;
-      nextImg.className = `cell-image ${fitMode}`;
+      // Preload next media with timeout
+      if (!isVideo) {
+        try {
+          await this.preloadImage(imageData.url);
+        } catch (e) {
+          console.warn('Failed to preload image:', imageData.url);
+          cell.isTransitioning = false;
+          return;
+        }
+      }
+
+      // Clear the next container and create new media element
+      nextContainer.innerHTML = '';
+      const nextMedia = this.createMediaElement(imageData.type || 'image', fitMode);
+      nextContainer.appendChild(nextMedia);
+
+      // Set the source
+      nextMedia.src = imageData.url;
 
       // Check NSFW blur
       if (imageData.nsfw && this.config.nsfwFilter === 'blur') {
-        nextImg.classList.add('blur');
+        nextMedia.classList.add('blur');
+      }
+
+      // For videos, wait for it to be ready then play
+      if (isVideo) {
+        // Keep muted initially for autoplay to work (browser requirement)
+        nextMedia.muted = true;
+
+        await new Promise((resolve) => {
+          const timeout = setTimeout(() => {
+            resolve(); // Continue anyway after timeout
+          }, 5000);
+
+          nextMedia.onloadedmetadata = () => {
+            // Seek to a random position in the video (0-90% to avoid end)
+            if (nextMedia.duration && nextMedia.duration > 1) {
+              const randomTime = Math.random() * nextMedia.duration * 0.9;
+              nextMedia.currentTime = randomTime;
+            }
+          };
+
+          nextMedia.oncanplaythrough = () => {
+            clearTimeout(timeout);
+            // Explicitly play the video
+            nextMedia.play().then(() => {
+              // After playback starts, apply user's volume settings
+              if (window.app) {
+                const shouldMute = window.app.isMuted || window.app.volume === 0;
+                nextMedia.muted = shouldMute;
+                if (!shouldMute) {
+                  nextMedia.volume = window.app.volume / 100;
+                }
+              }
+            }).catch(err => {
+              console.warn('Video autoplay blocked:', err);
+              // Keep it muted if autoplay was blocked
+            });
+            resolve();
+          };
+
+          nextMedia.onerror = (e) => {
+            clearTimeout(timeout);
+            console.warn('Video load error:', imageData.url, e);
+            resolve();
+          };
+        });
       }
 
       // Update overlay
@@ -132,16 +206,23 @@ class GridManager {
         : (imageData.source === 'local' ? imageData.path : '');
 
       // Crossfade
-      nextImg.classList.add('visible');
-      currentImg.classList.remove('visible');
+      nextMedia.classList.add('visible');
+      const currentMedia2 = currentContainer.querySelector('.cell-media');
+      if (currentMedia2) {
+        currentMedia2.classList.remove('visible');
+        // Stop video playback on old media
+        if (currentMedia2.tagName === 'VIDEO') {
+          currentMedia2.pause();
+        }
+      }
 
       // Wait for transition
-      await this.delay(400);
+      await this.delay(600);
 
       // Update cell state
       cell.currentImage = imageData;
     } catch (e) {
-      console.error('Error setting image:', e);
+      console.error('Error setting media:', e);
     } finally {
       cell.isTransitioning = false;
     }
@@ -208,10 +289,17 @@ class GridManager {
   // Clear all cells
   clear() {
     this.cells.forEach(cell => {
-      const images = cell.element.querySelectorAll('.cell-image');
-      images.forEach(img => {
-        img.src = '';
-        img.classList.remove('visible');
+      const containers = cell.element.querySelectorAll('.image-container');
+      containers.forEach(container => {
+        const media = container.querySelector('.cell-media');
+        if (media) {
+          if (media.tagName === 'VIDEO') {
+            media.pause();
+          }
+          media.src = '';
+          media.classList.remove('visible');
+        }
+        container.innerHTML = '';
       });
       cell.currentImage = null;
     });

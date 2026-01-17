@@ -124,15 +124,59 @@ class SettingsController {
       this.scanFolder();
     });
 
+    // Browse folder button - trigger the hidden file input
+    const folderPicker = document.getElementById('folder-picker');
+    document.getElementById('btn-browse-folder').addEventListener('click', () => {
+      folderPicker.click();
+    });
+
+    // Handle folder selection from file input
+    folderPicker.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        // Get the path from the first file's webkitRelativePath
+        const firstFile = e.target.files[0];
+        const relativePath = firstFile.webkitRelativePath;
+        const folderName = relativePath.split('/')[0];
+
+        // For display, we'll show the folder name
+        // The actual files are available in e.target.files
+        document.getElementById('folder-path').value = folderName + ' (browser selected)';
+
+        // Store the files for later use
+        this.selectedFiles = Array.from(e.target.files).filter(file => {
+          const ext = '.' + file.name.split('.').pop().toLowerCase();
+          const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+          const videoExts = ['.mp4', '.webm', '.mov'];
+          const includeVideos = document.getElementById('include-videos').checked;
+          return imageExts.includes(ext) || (includeVideos && videoExts.includes(ext));
+        });
+
+        // Update stats
+        const stats = document.querySelector('.folder-stats');
+        document.getElementById('folder-count').textContent = `${this.selectedFiles.length} files found`;
+        stats.classList.remove('hidden');
+      }
+    });
+
     // Load local button
     document.getElementById('btn-load-local').addEventListener('click', () => {
+      // Check if we have browser-selected files first
+      if (this.selectedFiles && this.selectedFiles.length > 0) {
+        this.hideSettings();
+        this.app.loadFromBrowserFiles(this.selectedFiles);
+        return;
+      }
+
+      // Otherwise try the path input
       const path = document.getElementById('folder-path').value;
       const recursive = document.getElementById('recursive-scan').checked;
       const includeVideos = document.getElementById('include-videos').checked;
 
-      if (path) {
+      if (path && !path.includes('(browser selected)')) {
         this.hideSettings();
         this.app.loadFromLocal(path, recursive, includeVideos);
+      } else if (!this.selectedFiles || this.selectedFiles.length === 0) {
+        alert('Please select a folder using the browse button or enter a folder path');
       }
     });
   }

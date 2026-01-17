@@ -228,6 +228,38 @@ app.delete('/api/profiles/:id', (req, res) => {
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
 const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov'];
 
+// Open folder browser dialog (Windows)
+app.get('/api/browse-folder', async (req, res) => {
+  const { exec } = require('child_process');
+
+  // PowerShell command to open folder browser dialog - using encoded command for reliability
+  const psScript = `
+Add-Type -AssemblyName System.Windows.Forms
+[System.Windows.Forms.Application]::EnableVisualStyles()
+$f = New-Object System.Windows.Forms.FolderBrowserDialog
+$f.Description = 'Select a folder containing images'
+$f.ShowNewFolderButton = $false
+$f.RootFolder = 'MyComputer'
+$null = $f.ShowDialog()
+$f.SelectedPath
+`;
+
+  // Encode the script to base64 to avoid quoting issues
+  const encodedCommand = Buffer.from(psScript, 'utf16le').toString('base64');
+
+  exec(`powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedCommand}`,
+    { encoding: 'utf8', timeout: 60000 },
+    (error, stdout, stderr) => {
+      if (error) {
+        console.error('Folder browser error:', error.message);
+        return res.json({ error: error.message, path: null });
+      }
+      const selectedPath = stdout.trim();
+      res.json({ path: selectedPath || null });
+    }
+  );
+});
+
 app.post('/api/scan-folder', async (req, res) => {
   const { folderPath, recursive = true, includeVideos = false } = req.body;
 

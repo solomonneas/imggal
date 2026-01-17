@@ -135,6 +135,12 @@ class App {
       this.toggleVolumeSlider();
     });
 
+    // Mute button
+    document.getElementById('fab-mute').addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleMute();
+    });
+
     // Volume slider
     const volumeSlider = document.getElementById('volume-slider');
     volumeSlider.addEventListener('input', (e) => {
@@ -149,6 +155,7 @@ class App {
     });
 
     // Initialize volume
+    this.isMuted = false;
     this.updateVolumeUI();
   }
 
@@ -163,6 +170,18 @@ class App {
     document.getElementById('volume-slider-container').classList.remove('visible');
   }
 
+  toggleMute() {
+    this.isMuted = !this.isMuted;
+    this.updateMuteUI();
+    this.applyVolumeToVideos();
+  }
+
+  updateMuteUI() {
+    const muteBtn = document.getElementById('fab-mute');
+    muteBtn.classList.toggle('muted', this.isMuted);
+    muteBtn.title = this.isMuted ? 'Unmute (M)' : 'Mute (M)';
+  }
+
   setVolume(value) {
     this.volume = Math.max(0, Math.min(100, value));
     this.updateVolumeUI();
@@ -170,7 +189,6 @@ class App {
   }
 
   updateVolumeUI() {
-    const btn = document.getElementById('fab-volume');
     const slider = document.getElementById('volume-slider');
     const valueDisplay = document.getElementById('volume-value');
 
@@ -180,21 +198,14 @@ class App {
 
     // Update slider track fill
     slider.style.setProperty('--volume-percent', `${this.volume}%`);
-
-    // Update icon based on volume level
-    btn.classList.remove('muted', 'low');
-    if (this.volume === 0) {
-      btn.classList.add('muted');
-    } else if (this.volume < 50) {
-      btn.classList.add('low');
-    }
   }
 
   applyVolumeToVideos() {
     const videos = document.querySelectorAll('video');
+    const effectiveVolume = this.isMuted ? 0 : this.volume;
     videos.forEach(video => {
-      video.volume = this.volume / 100;
-      video.muted = this.volume === 0;
+      video.volume = effectiveVolume / 100;
+      video.muted = this.isMuted || effectiveVolume === 0;
     });
   }
 
@@ -224,11 +235,16 @@ class App {
     if (this.sourceMode === 'reddit' && this.currentProfile) {
       this.loadFromReddit(this.currentProfile);
     } else if (this.sourceMode === 'local') {
-      const path = document.getElementById('folder-path').value;
-      const recursive = document.getElementById('recursive-scan').checked;
-      const includeVideos = document.getElementById('include-videos').checked;
-      if (path) {
-        this.loadFromLocal(path, recursive, includeVideos);
+      // Check if we have browser-selected files
+      if (this.settingsController.selectedFiles && this.settingsController.selectedFiles.length > 0) {
+        this.loadFromBrowserFiles(this.settingsController.selectedFiles);
+      } else {
+        const path = document.getElementById('folder-path').value;
+        const recursive = document.getElementById('recursive-scan').checked;
+        const includeVideos = document.getElementById('include-videos').checked;
+        if (path) {
+          this.loadFromLocal(path, recursive, includeVideos);
+        }
       }
     } else {
       // No active source, show settings
@@ -267,12 +283,7 @@ class App {
           break;
         case 'm':
           // Toggle mute
-          if (this.volume > 0) {
-            this._previousVolume = this.volume;
-            this.setVolume(0);
-          } else {
-            this.setVolume(this._previousVolume || 50);
-          }
+          this.toggleMute();
           break;
       }
     });
@@ -378,6 +389,52 @@ class App {
     this.isLoading = false;
   }
 
+  // Load images from browser-selected files
+  async loadFromBrowserFiles(files) {
+    if (this.isLoading) return;
+    this.isLoading = true;
+
+    this.progressDisplay.show();
+    this.progressDisplay.setStage('init');
+    this.progressDisplay.setMessage('Processing selected files...');
+
+    try {
+      // Clean up any previous object URLs
+      if (this.objectUrls) {
+        this.objectUrls.forEach(url => URL.revokeObjectURL(url));
+      }
+      this.objectUrls = [];
+
+      const videoExts = ['.mp4', '.webm', '.mov'];
+
+      // Create object URLs for each file
+      this.images = files.map(file => {
+        const url = URL.createObjectURL(file);
+        this.objectUrls.push(url);
+        const ext = '.' + file.name.split('.').pop().toLowerCase();
+        return {
+          url: url,
+          title: file.name,
+          source: 'local',
+          path: file.webkitRelativePath || file.name,
+          type: videoExts.includes(ext) ? 'video' : 'image'
+        };
+      });
+
+      this.progressDisplay.setMessage(`Loaded ${this.images.length} files`);
+
+      await this.startGallery();
+
+    } catch (error) {
+      console.error('Failed to load from browser files:', error);
+      this.progressDisplay.setMessage(`Error: ${error.message}`);
+      await this.delay(2000);
+    }
+
+    this.progressDisplay.hide();
+    this.isLoading = false;
+  }
+
   // Load images from local folder
   async loadFromLocal(folderPath, recursive = true, includeVideos = false) {
     if (this.isLoading) return;
@@ -413,7 +470,8 @@ class App {
         url: `/api/local-image?path=${encodeURIComponent(img.path)}`,
         title: img.name,
         source: 'local',
-        path: img.path
+        path: img.path,
+        type: img.type || 'image'
       }));
 
       this.progressDisplay.setMessage(`Found ${this.images.length} images`);

@@ -22,6 +22,7 @@
   max-height: 85vh;
   padding: 24px;
   overflow-y: auto;
+  overflow-x: hidden;
   animation: scaleIn var(--transition-normal);
 }
 
@@ -219,6 +220,32 @@
 .folder-input {
   display: flex;
   gap: 8px;
+}
+
+.folder-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.folder-input-group input[type="text"] {
+  flex: 1;
+}
+
+.btn-browse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  min-width: 48px;
+}
+
+.btn-browse svg {
+  opacity: 0.8;
+  transition: opacity var(--transition-fast);
+}
+
+.btn-browse:hover svg {
+  opacity: 1;
 }
 
 .folder-stats {

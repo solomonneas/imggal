@@ -26,24 +26,31 @@ class ImageRotator {
 
   setFitMode(mode) {
     this.fitMode = mode;
-    // Update all currently displayed images
-    document.querySelectorAll('.cell-image').forEach(img => {
-      img.classList.remove('fill', 'fit', 'stretch');
-      img.classList.add(mode);
+    // Update all currently displayed media (images and videos)
+    document.querySelectorAll('.cell-media').forEach(media => {
+      media.classList.remove('fill', 'fit', 'stretch');
+      media.classList.add(mode);
     });
   }
 
-  start() {
+  async start() {
     if (this.images.length === 0) return;
 
     this.isRunning = true;
     this.isPaused = false;
 
-    // Initial population of all cells
-    this.populateAllCells();
+    // Initial population of all cells with staggered loading
+    await this.populateAllCells();
+
+    // Small delay to ensure all cells are rendered
+    await this.delay(100);
 
     // Start rotation timers for each cell
     this.startTimers();
+  }
+
+  delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   stop() {
@@ -62,21 +69,28 @@ class ImageRotator {
     this.startTimers();
   }
 
-  populateAllCells() {
+  async populateAllCells() {
     const cellCount = this.gridManager.getCellCount();
 
+    // Populate cells with slight stagger to prevent overwhelming the browser
     for (let i = 0; i < cellCount; i++) {
       const image = this.getNextImage();
-      this.gridManager.setImage(i, image, this.fitMode);
+      // Don't await each one - fire them off with small delays
+      setTimeout(() => {
+        this.gridManager.setImage(i, image, this.fitMode);
+      }, i * 100); // 100ms stagger between each cell
     }
+
+    // Wait for all cells to at least start loading
+    await this.delay(cellCount * 100 + 500);
   }
 
   startTimers() {
     const cellCount = this.gridManager.getCellCount();
 
     for (let i = 0; i < cellCount; i++) {
-      // Stagger the start times for each cell
-      const stagger = Math.random() * this.interval * 0.3;
+      // Stagger the start times for each cell (spread evenly over 50% of the interval)
+      const stagger = (i / cellCount) * this.interval * 0.5;
 
       const timer = setTimeout(() => {
         this.startCellTimer(i);
@@ -84,22 +98,25 @@ class ImageRotator {
 
       this.cellTimers.push(timer);
     }
+
+    // Also update the status bar countdown
+    if (cellCount > 0) {
+      this.updateCountdown(0, this.interval);
+    }
   }
 
   startCellTimer(cellIndex) {
-    // Add randomness to interval (80% - 120% of base interval)
-    const randomizedInterval = this.interval * (0.8 + Math.random() * 0.4);
+    // Add randomness to interval (85% - 115% of base interval)
+    const randomizedInterval = this.interval * (0.85 + Math.random() * 0.3);
 
+    // First rotation happens after the interval
     const timer = setInterval(() => {
-      if (!this.isPaused) {
+      if (!this.isPaused && this.isRunning) {
         this.rotateCell(cellIndex);
       }
     }, randomizedInterval);
 
     this.cellTimers.push(timer);
-
-    // Update countdown display
-    this.updateCountdown(cellIndex, randomizedInterval);
   }
 
   rotateCell(cellIndex) {
