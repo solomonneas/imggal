@@ -1,6 +1,72 @@
-node_modules/
-cache/
+# Personal AI context - DO NOT COMMIT
+BOOTSTRAP.md
+SOUL.md
+IDENTITY.md
+USER.md
+AGENTS.md
+HEARTBEAT.md
+TOOLS.md
+SAFETY_RULES.md
+MEMORY.md
+memory/
+
+# OpenClaw files
+.openclaw/
+*.sqlite
+
+# AI Planning/Context (other providers)
+GEMINI.md
+.gemini/
+CODEX.md
+.codex/
+COPILOT.md
+.copilot/
+KIMI.md
+.kimi/
+.cursorrules
+.cursor/
+.continuerules
+.continue/
+.aider*
+.roo/
+.pi/
+plan.md
+*.plan.md
+blueprint.md
+.agents/
+.soul/
+
+# Environment files
+.env
+.env.*
+*.env
+
+# Secrets
+credentials.json
+*-credentials.json
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# Logs
 *.log
+logs/
+
+# OS files
 .DS_Store
 Thumbs.db
-.env
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
